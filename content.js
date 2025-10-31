@@ -72,16 +72,24 @@ async function createYoutubeExportChip(){
 async function AddNewChipToYoutubeChipContainer(){
     const chipcontainer=await getYouTubeChipContainer();
     if(chipcontainer){
-        const newchip=await createYoutubeReverseChip();
-        chipcontainer.appendChild(newchip);
-        console.log("✅ New chip added:", newchip);
-        const exportchip=await createYoutubeExportChip();
-        chipcontainer.appendChild(exportchip);
-        console.log("✅ New export chip added:", exportchip);
+        if(!document.getElementById("reverse-chip")){
+            const newchip=await createYoutubeReverseChip();
+            chipcontainer.appendChild(newchip);
+            console.log("✅ New chip added:", newchip);
+        }
+
+        if(!document.getElementById("export-chip")){
+            const exportchip=await createYoutubeExportChip();
+            chipcontainer.appendChild(exportchip);
+            console.log("✅ New export chip added:", exportchip);
+        }
+        
+        
     }else{
         console.warn("❌ Chip container not found, cannot add new chip.");
     }
 }
+
 
 
 
@@ -175,7 +183,7 @@ function getInfoVideosFromPlaylist(){
 
 
 function downloadJSON(data, filename = "data.json") {
-    console.log(filename)
+  console.log(data)
   const blob = new Blob([data], { type: "application/json" });
   const url = URL.createObjectURL(blob);
 
@@ -200,12 +208,8 @@ window.addEventListener('yt-navigate-finish', async () => {
   } catch (error) {
   }
   // Check if chip already exists, if not, add it
-  if(document.getElementById("reverse-chip")){
-    console.log("Chip already exists, not adding again.");
-    return;
-  }else{
-    AddNewChipToYoutubeChipContainer("Shorts");
-  }
+  AddNewChipToYoutubeChipContainer("Shorts");
+  
 
   // Export 
 
