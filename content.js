@@ -79,9 +79,73 @@ async function AddNewChipToYoutubeChipContainer(){
     }
 }
 
+async function getnumberofvideos(){
+    const container = document.querySelector(
+        'div.metadata-stats.style-scope.ytd-playlist-byline-renderer'
+    );
+    console.log(container)
+    if (!container) return null;
+
+    // Grab the first span inside yt-formatted-string, which contains the number
+    const numberSpan = container.querySelector('yt-formatted-string').querySelector('span:first-child').textContent;
+    console.log(numberSpan)
+
+    const splitnumber=numberSpan.split(",");
+    const finalnumber=splitnumber[0]+splitnumber[1];
+
+    if(finalnumber){
+        return parseInt(finalnumber)
+    }else{
+        return null
+    }
+}
+
+
+
 
 async function whenclickedchip(){
+    const nvideos=await getnumberofvideos();
+    console.log(nvideos)
+    const numscrolls=(nvideos/100)+1
     console.log("clicado")
+    for (let i = 0; i < numscrolls; i++) {
+        // Scroll to the bottom
+        document.scrollingElement.scrollTop = document.scrollingElement.scrollHeight;
+
+        console.log(`Scroll ${i + 1} done`);
+
+        // Wait 3 seconds
+        await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+
+
+    getInfoVideosFromPlaylist()
+
+}
+
+
+
+function getInfoVideosFromPlaylist(){
+    const div=document.getElementById("contents");
+    const videos=div.querySelectorAll("ytd-playlist-video-renderer");
+    const videodata=[];
+
+    videos.forEach((video) => {
+        const index=video.querySelector("#index").innerText.trim();
+        const title=video.querySelector("#video-title").innerText.trim();
+        const duration=video.querySelector("span.ytd-thumbnail-overlay-time-status-renderer").innerText.trim();
+        const thumbnail=video.querySelector("#thumbnail img").src;
+        const url=video.querySelector("#thumbnail a").href;
+        videodata.push({
+            index: index,
+            title: title,
+            duration: duration,
+            thumbnail: thumbnail,
+            url: url
+        });
+    });
+
+    console.log(videodata);
 }
 
 window.addEventListener('yt-navigate-finish', () => {
@@ -89,4 +153,31 @@ window.addEventListener('yt-navigate-finish', () => {
   AddNewChipToYoutubeChipContainer("Shorts");
 });
 
+// content.js
+function injectFetchInterceptor() {
+    const script = document.createElement('script');
+    script.textContent = `
+        (function() {
+            const originalFetch = window.fetch;
+            window.fetch = async (...args) => {
+                const response = await originalFetch(...args);
 
+                if (args[0].includes("/youtubei/v1/browse?prettyPrint=false")) {
+                    try {
+                        const clone = response.clone();
+                        const data = await clone.json();
+                        console.log("✅ Intercepted YouTube browse response:", data);
+                    } catch (err) {
+                        console.error("Failed to parse JSON:", err);
+                    }
+                }
+
+                return response;
+            };
+        })();
+    `;
+    document.documentElement.appendChild(script);
+    script.remove();
+}
+
+injectFetchInterceptor();

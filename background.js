@@ -3,7 +3,7 @@ chrome.webRequest.onCompleted.addListener(
 
   (details) => {
     if (details.url.includes("/youtubei/v1/browse?prettyPrint=false") && details.method === "POST"){
-        console.log("xd");
+        console.log(details);
         console.log("background.js loaded");
         console.log("Request completed:", details.url);
         console.log("Method:", details.method);
@@ -18,3 +18,12 @@ chrome.webRequest.onCompleted.addListener(
 );
 
 
+chrome.webRequest.onBeforeRequest.addListener(
+  function(details) {
+    if (details.url.includes("/youtubei/v1/browse?prettyPrint=false")){
+        console.log('Requestwena:', details);
+    }
+    console.log('Request:', details);
+  },
+  {urls: ["<all_urls>"]}
+);
