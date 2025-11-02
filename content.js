@@ -196,10 +196,14 @@ async function GetData(number){
             // Scroll to the bottom
             document.scrollingElement.scrollTop = document.scrollingElement.scrollHeight;
 
+            
+
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
             console.log(`Scroll ${i + 1} done`);
 
-            // Wait 3 seconds
-            await new Promise(resolve => setTimeout(resolve, 3000));
+
+
         }
         const videodata=await getInfoVideosFromPlaylist()
         downloadJSON(JSON.stringify(videodata),getnamePlaylist());
