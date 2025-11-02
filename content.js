@@ -281,7 +281,6 @@ async function getInfoVideosFromPlaylist(){
 
         //get the video id from the url
         const videoid=url.split("v=")[1].split("&")[0];
-        console.log(videoid);
         //get the thumbnail from the video id
         const thumbnail=`https://img.youtube.com/vi/${videoid}/mqdefault.jpg`
 
@@ -313,6 +312,19 @@ function downloadJSON(data, filename = "data.json") {
 
 function createAlert(){
     const container = document.querySelector("ytd-app") || document.body;
+    document.body.style.overflow = "hidden";
+
+    const containerblackoverlay = document.createElement("div");
+    containerblackoverlay.id = "export-black-overlay";
+    containerblackoverlay.style.position = "fixed";
+    containerblackoverlay.style.top = "0";
+    containerblackoverlay.style.left = "0";
+    containerblackoverlay.style.width = "100%";
+    containerblackoverlay.style.height = "100%";
+    containerblackoverlay.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    containerblackoverlay.style.zIndex = "9999";
+    containerblackoverlay.style.pointerEvents = "all";
+    container.appendChild(containerblackoverlay);
     // Create overlay
     const alertBox = document.createElement("div");
     alertBox.id = "export-alert";
@@ -330,8 +342,8 @@ function createAlert(){
     alertBox.style.zIndex = "10000";
     alertBox.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
     alertBox.textContent = "Don't touch anything, you are exporting the playlist!";
-    container.appendChild(alertBox);
-    return alertBox;
+    containerblackoverlay.appendChild(alertBox);
+    return containerblackoverlay;
 }
 
 

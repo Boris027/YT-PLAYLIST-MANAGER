@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Hello Extensions",
-  "description": "Base Level Extension",
+  "name": "YT-PLAYLIST-ENHANCED",
+  "description": "Take full control of your YouTube playlists! With this extension, you can reverse the order of any playlist and export its video details as a JSON file in seconds. Perfect for content creators, curators, or anyone who wants to analyze, back up, or reorganize playlists.",
   "version": "1.0",
   "permissions": ["webRequest"],
   "host_permissions": ["*://*.youtube.com/*"],
