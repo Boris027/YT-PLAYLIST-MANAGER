@@ -277,11 +277,18 @@ async function getInfoVideosFromPlaylist(){
         const index=video.querySelector("#index-container yt-formatted-string").innerText.trim();
         const title=video.querySelector("#content #container #meta h3").innerText.trim();
         const duration=video.querySelector("span.ytd-thumbnail-overlay-time-status-renderer").textContent.trim();
-        const thumbnail=video.querySelector("#thumbnail img").src;
         const url=video.querySelector("#thumbnail a").href;
+
+        //get the video id from the url
+        const videoid=url.split("v=")[1].split("&")[0];
+        console.log(videoid);
+        //get the thumbnail from the video id
+        const thumbnail=`https://img.youtube.com/vi/${videoid}/mqdefault.jpg`
+
         videodata.push({
             index: index,
             title: title,
+            thumbnail: thumbnail,
             duration: duration,
             url: url
         });
