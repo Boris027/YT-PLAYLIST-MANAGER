@@ -224,79 +224,136 @@ function pickerModel(optionsplaylist){
 }
 
 
-async function startImport(file,nameplaylist){
-    const fileobject=JSON.parse(await file[0].text())
-    
+async function startImport(file, nameplaylist) {
+    const fileobject = JSON.parse(await file[0].text());
 
-    for (const element of fileobject) {
-        
-            
-        
-        const newWindow = window.open(element.url);
-        await new Promise(resolve => {
-            newWindow.onload = resolve;
-        });
+    const backgroundiframe = createBackgroundIframe();
 
-        try {
-            // Wait for element to appear
-            async function waitForElement(selector, root = newWindow.document, timeout = 10000) {
-                const start = Date.now();
-                while (Date.now() - start < timeout) {
-                    const el = root.querySelector(selector);
-                    if (el) return el;
-                    await new Promise(r => setTimeout(r, 200));
-                }
-                throw new Error(`Element ${selector} not found in time`);
-            }
-
-            //open the 3 points button
-            const optionsbutton = await waitForElement("#button-shape button");
-            optionsbutton.click()
-            
-            //get the content with save and report button
-            const listBox1 = await waitForElement(
-                'ytd-menu-popup-renderer tp-yt-paper-listbox#items '
-            );
-            //try to get the save button from the ... options
-            const listBox=listBox1.querySelectorAll("ytd-menu-service-item-renderer")
-            if(listBox.length>1){
-                const options=await waitForElement('tp-yt-paper-listbox ytd-menu-service-item-renderer')
-                options.click();
-            }else{
-                //if that doesnt exists, it try to take it from the normal bar, where like, dislike, download are located
-                const thirdButton = await waitForElement(
-                    'ytd-menu-renderer #flexible-item-buttons yt-button-view-model:nth-of-type(2) button-view-model button'
-                );
-                thirdButton.click();
-            }
-            
-
-            /*const thirdButton = document.querySelector(
-                'ytd-menu-renderer #flexible-item-buttons yt-button-view-model:nth-of-type(2) button-view-model button'
-            );*/
-
-            const optionstosave=await waitForElement('yt-list-view-model')
-            console.log(optionstosave)
-            const options2=optionstosave.querySelectorAll("toggleable-list-item-view-model")
-            for(const c of options2){
-                const listname=c.querySelector("yt-list-item-view-model div .yt-list-item-view-model__text-wrapper div span").textContent
-
-                if(listname==nameplaylist){
-                    c.querySelector("yt-list-item-view-model").click();
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    newWindow.close()
-                    break;
-                }
-
-            }
-
-        } catch (error) {
-            newWindow.close()
+    // Helper to wait for an element inside the iframe
+    async function waitForElement(selector, root, timeout = 10000) {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+            const el = root.querySelector(selector);
+            if (el) return el;
+            await new Promise(r => setTimeout(r, 200));
         }
-
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        throw new Error(`Element ${selector} not found in time`);
     }
 
+    // Load one URL at a time and process
+    async function processUrl(url) {
+        return new Promise((resolve) => {
+            const newWindow = createIframe();
+            backgroundiframe.appendChild(newWindow);
+            newWindow.src = url;
+
+            newWindow.onload = async () => {
+                const iframeDoc = newWindow.contentDocument;
+
+                try {
+                    // Open the 3 dots button
+                    const optionsbutton = await waitForElement("#button-shape button", iframeDoc);
+                    optionsbutton.click();
+
+                    // Get the menu items
+                    const listBox1 = await waitForElement(
+                        'ytd-menu-popup-renderer tp-yt-paper-listbox#items',
+                        iframeDoc
+                    );
+
+                    const listBox = listBox1.querySelectorAll("ytd-menu-service-item-renderer");
+
+                    if (listBox.length > 1) {
+                        const options = await waitForElement(
+                            'tp-yt-paper-listbox ytd-menu-service-item-renderer',
+                            iframeDoc
+                        );
+                        options.click();
+                    } else {
+                        // Take the button from the main bar
+                        const thirdButton = await waitForElement(
+                            'ytd-menu-renderer #flexible-item-buttons yt-button-view-model:nth-of-type(2) button-view-model button',
+                            iframeDoc
+                        );
+                        thirdButton.click();
+                    }
+
+                    // Wait for the playlist selection list
+                    const optionstosave = await waitForElement('yt-list-view-model', iframeDoc);
+                    const options2 = optionstosave.querySelectorAll("toggleable-list-item-view-model");
+
+                    for (const c of options2) {
+                        const listname = c.querySelector(
+                            "yt-list-item-view-model div .yt-list-item-view-model__text-wrapper div span"
+                        ).textContent;
+
+                        if (listname === nameplaylist) {
+                            c.querySelector("yt-list-item-view-model").click();
+                            await new Promise(r => setTimeout(r, 3000));
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    console.log("Error processing URL:", url, error);
+                } finally {
+                    // Clear and remove iframe
+                    newWindow.src = "about:blank";
+                    newWindow.remove();
+                    resolve();
+                }
+            };
+        });
+    }
+
+    // Process each URL sequentially
+    for (const element of fileobject) {
+        await processUrl(element.url);
+    }
+
+    backgroundiframe.remove();
+}
+
+
+function createIframe(){
+    // Create overlay
+    const alertBox = document.createElement("iframe");
+    alertBox.id = "export-alert";
+    alertBox.style.position = "fixed";
+    alertBox.style.top = "50%";
+    alertBox.style.left = "50%";
+    alertBox.style.transform = "translate(-50%, -50%)"; // center
+    alertBox.style.backgroundColor = "rgba(0, 0, 0, 0.85)";
+    alertBox.style.color = "white";
+    alertBox.style.padding = "20px 30px";
+    alertBox.style.borderRadius = "10px";
+    alertBox.style.fontSize = "16px";
+    alertBox.style.fontWeight = "bold";
+    alertBox.style.textAlign = "center";
+    alertBox.style.zIndex = "10000";
+    alertBox.style.width="80%"
+    alertBox.style.height="80%"
+    alertBox.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+    alertBox.textContent = "Don't touch anything, you are exporting the playlist!";
+    return alertBox
+}
+
+
+function createBackgroundIframe(){
+    const container = document.querySelector("ytd-app") || document.body;
+    document.body.style.overflow = "hidden";
+
+    const containerblackoverlay = document.createElement("div");
+    containerblackoverlay.id = "export-black-overlay";
+    containerblackoverlay.style.position = "fixed";
+    containerblackoverlay.style.top = "0";
+    containerblackoverlay.style.left = "0";
+    containerblackoverlay.style.width = "100%";
+    containerblackoverlay.style.height = "100%";
+    containerblackoverlay.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    containerblackoverlay.style.zIndex = "9999";
+    containerblackoverlay.style.pointerEvents = "all";
+    container.appendChild(containerblackoverlay);
+    return containerblackoverlay
 }
 
 
