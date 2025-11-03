@@ -52,8 +52,10 @@ function importbutton(){
         importButton.style.transform = "none";
     };
 
-    importButton.onclick = () => {
-
+    importButton.onclick = async () => {
+        //touch the Owned button so only you will be able to import to true lists not created by youtube
+        await document.querySelector("chip-bar-view-model div:nth-of-type(4) chip-view-model chip-shape button").click()
+        await new Promise(resolve => setTimeout(resolve, 1000));
         pickerModel(getLists());
     }
 
@@ -227,51 +229,70 @@ async function startImport(file,nameplaylist){
     
 
     for (const element of fileobject) {
+        
+            
+        
         const newWindow = window.open(element.url);
         await new Promise(resolve => {
             newWindow.onload = resolve;
         });
-        // Wait for element to appear
-        async function waitForElement(selector, root = newWindow.document, timeout = 10000) {
-            const start = Date.now();
-            while (Date.now() - start < timeout) {
-                const el = root.querySelector(selector);
-                if (el) return el;
-                await new Promise(r => setTimeout(r, 200));
-            }
-            throw new Error(`Element ${selector} not found in time`);
-        }
 
-        const container = await waitForElement("ytd-popup-container");
-        const optionsbutton = await waitForElement("#button-shape button");
-        optionsbutton.click()
-        
-        const options=await waitForElement('tp-yt-paper-listbox ytd-menu-service-item-renderer')
-        options.click();
-
-        const optionstosave=await waitForElement('yt-list-view-model')
-        console.log(optionstosave)
-        const options2=optionstosave.querySelectorAll("toggleable-list-item-view-model")
-        for(const c of options2){
-            const listname=c.querySelector("yt-list-item-view-model div .yt-list-item-view-model__text-wrapper div span").textContent
-
-            if(listname==nameplaylist){
-                c.querySelector("yt-list-item-view-model").click();
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                newWindow.close()
-                break;
+        try {
+            // Wait for element to appear
+            async function waitForElement(selector, root = newWindow.document, timeout = 10000) {
+                const start = Date.now();
+                while (Date.now() - start < timeout) {
+                    const el = root.querySelector(selector);
+                    if (el) return el;
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                throw new Error(`Element ${selector} not found in time`);
             }
 
+            //open the 3 points button
+            const optionsbutton = await waitForElement("#button-shape button");
+            optionsbutton.click()
+            
+            //get the content with save and report button
+            const listBox1 = await waitForElement(
+                'ytd-menu-popup-renderer tp-yt-paper-listbox#items '
+            );
+            //try to get the save button from the ... options
+            const listBox=listBox1.querySelectorAll("ytd-menu-service-item-renderer")
+            if(listBox.length>1){
+                const options=await waitForElement('tp-yt-paper-listbox ytd-menu-service-item-renderer')
+                options.click();
+            }else{
+                //if that doesnt exists, it try to take it from the normal bar, where like, dislike, download are located
+                const thirdButton = await waitForElement(
+                    'ytd-menu-renderer #flexible-item-buttons yt-button-view-model:nth-of-type(2) button-view-model button'
+                );
+                thirdButton.click();
+            }
+            
+
+            /*const thirdButton = document.querySelector(
+                'ytd-menu-renderer #flexible-item-buttons yt-button-view-model:nth-of-type(2) button-view-model button'
+            );*/
+
+            const optionstosave=await waitForElement('yt-list-view-model')
+            console.log(optionstosave)
+            const options2=optionstosave.querySelectorAll("toggleable-list-item-view-model")
+            for(const c of options2){
+                const listname=c.querySelector("yt-list-item-view-model div .yt-list-item-view-model__text-wrapper div span").textContent
+
+                if(listname==nameplaylist){
+                    c.querySelector("yt-list-item-view-model").click();
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    newWindow.close()
+                    break;
+                }
+
+            }
+
+        } catch (error) {
+            newWindow.close()
         }
-
-        //const container=newWindow.document.querySelector("yt-list-view-model")
-        /*console.log(container)
-        const options=container.querySelectorAll("tp-yt-paper-item")
-        console.log(options)
-        options.forEach(c=>{
-            console.log(c.querySelector("span").textContent)
-        })*/
-
 
         await new Promise(resolve => setTimeout(resolve, 3000));
     }
